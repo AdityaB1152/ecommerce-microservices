@@ -1,25 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const userRoutes = require('./src/routes/userRoutes');
+const { consumeMessage } = require('../shared/utils/messageQueue');
+
 const app = express();
+app.use(express.json());
+app.use('/users', userRoutes);
 
-app.use(express.json);
+mongoose.connect('mongodb://localhost:27017/userDB', { useNewUrlParser: true, useUnifiedTopology: true });
 
-mongoose.connect('mongodb://localhost:27017/userDB', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+consumeMessage('user_events', (message) => {
+  console.log("User Event Received:", message);
 });
 
-const userSchema = new mongoose.Schema({
-    username: String,
-    email: String,
+app.listen(3001, () => {
+  console.log("User Service is running on port 3001");
 });
-
-const User = mongoose.model('User', userSchema);
-
-app.post('/register', async (req, res) => {
-    const user = new User(req.body);
-    await user.save();
-    res.status(201).send('User registered successfully');
-});
-
-app.listen(3001, () => console.log('User Service running on port 3001'));
